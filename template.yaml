@@ -1,0 +1,282 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  signal-functions:
+    Serverless lambda functions to connect peers
+Parameters:
+  MessageApiUrl:
+    Type: String
+    Default: https://ls66juopf1.execute-api.eu-west-1.amazonaws.com/prod
+Resources:
+  ISeeCamSocket:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: ISeeCamSocket
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: "$request.body.action"
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ISeeCamSocket
+      RouteKey: $connect
+      AuthorizationType: NONE
+      OperationName: ConnectRoute
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref ConnectInteg
+  ConnectInteg:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ISeeCamSocket
+      Description: Connect Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::Sub:
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConnectFunction.Arn}/invocations
+  LeaveRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ISeeCamSocket
+      RouteKey: leave
+      AuthorizationType: NONE
+      OperationName: LeaveRoute
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref LeaveInteg
+  LeaveInteg:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ISeeCamSocket
+      Description: Leave Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::Sub:
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LeaveFunction.Arn}/invocations
+  MessageRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ISeeCamSocket
+      RouteKey: message
+      AuthorizationType: NONE
+      OperationName: SendRoute
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref MessageInteg
+  MessageInteg:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ISeeCamSocket
+      Description: Send Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::Sub:
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MessageFunction.Arn}/invocations
+  JoinRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ISeeCamSocket
+      RouteKey: join
+      AuthorizationType: NONE
+      OperationName: SendRoute
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref JoinInteg
+  JoinInteg:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ISeeCamSocket
+      Description: Send Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::Sub:
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${JoinFunction.Arn}/invocations
+  Deployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+      - ConnectRoute
+      - LeaveRoute
+      - MessageRoute
+      - JoinRoute
+    Properties:
+      ApiId: !Ref ISeeCamSocket
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      StageName: prod
+      Description: prod Stage
+      DeploymentId: !Ref Deployment
+      ApiId: !Ref ISeeCamSocket
+  ConnectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Environment:
+        Variables:
+          MESSAGE_API_URL: !Ref MessageApiUrl
+      CodeUri: ./
+      Handler: handlers/connect.handler
+      MemorySize: 256
+      Runtime: nodejs14.x
+      Timeout: 60
+      FunctionName: ISeeCamSocketConnectFunction
+  ConnectPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - ISeeCamSocket
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ConnectFunction
+      Principal: apigateway.amazonaws.com
+  LeaveFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Environment:
+        Variables:
+          MESSAGE_API_URL: !Ref MessageApiUrl
+      CodeUri: ./
+      Handler: handlers/leave.handler
+      MemorySize: 256
+      Runtime: nodejs14.x
+      Timeout: 60
+      FunctionName: ISeeCamSocketLeaveFunction
+  LeavePermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - ISeeCamSocket
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref LeaveFunction
+      Principal: apigateway.amazonaws.com
+  MessageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Environment:
+        Variables:
+          MESSAGE_API_URL: !Ref MessageApiUrl
+      CodeUri: ./
+      Handler: handlers/message.handler
+      Timeout: 60
+      MemorySize: 256
+      Runtime: nodejs14.x
+      FunctionName: ISeeCamSocketMessageFunction
+  MessagePermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - ISeeCamSocket
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref MessageFunction
+      Principal: apigateway.amazonaws.com
+  JoinFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Environment:
+        Variables:
+          MESSAGE_API_URL: !Ref MessageApiUrl
+      CodeUri: ./
+      Handler: handlers/join.handler
+      Timeout: 60
+      MemorySize: 256
+      Runtime: nodejs14.x
+      FunctionName: ISeeCamSocketJoinFunction
+  JoinPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - ISeeCamSocket
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref JoinFunction
+      Principal: apigateway.amazonaws.com
+  KeepWarmFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: !GetAtt KeepWarmFunctionRole.Arn
+      Environment:
+        Variables:
+          MESSAGE_API_URL: !Ref MessageApiUrl
+      CodeUri: ./
+      Handler: handlers/warm.handler
+      Timeout: 60
+      MemorySize: 256
+      Runtime: nodejs14.x
+      FunctionName: ISeeCamSocketKeepWarmFunction
+      Events:
+        Schedule:
+          Type: Schedule
+          Properties:
+            Name: ISeeCamSocketKeepWarm
+            Schedule: rate(5 minutes)
+  KeepWarmFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'LambdaInvokeFunction'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:*"
+        - PolicyName: 'ManageConnections'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'execute-api:ManageConnections'
+                Resource:
+                  - !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ISeeCamSocket}/*'  
+        - PolicyName: 'LogFull'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:*
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:log-stream:*"            
+  KeepWarmPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref KeepWarmFunction
+      Principal: apigateway.amazonaws.com
+
+Outputs:
+  ConnectFunctionArn:
+    Description: "Connect function ARN"
+    Value: !GetAtt ConnectFunction.Arn
+
+  LeaveFunctionArn:
+    Description: "Leave function ARN"
+    Value: !GetAtt LeaveFunction.Arn
+
+  MessageFunctionArn:
+    Description: "Message function ARN"
+    Value: !GetAtt MessageFunction.Arn
+
+  JoinFunctionArn:
+    Description: "JoinFunction ARN"
+    Value: !GetAtt JoinFunction.Arn
+
+  KeepWarmFunctionArn:
+    Description: "KeepWarmFunction ARN"
+    Value: !GetAtt KeepWarmFunction.Arn
+
+  WebSocketURI:
+    Description: "The WSS Protocol URI to connect to"
+    Value: !Join [ '', [ 'wss://', !Ref ISeeCamSocket, '.execute-api.',!Ref 'AWS::Region','.amazonaws.com/',!Ref 'Stage'] ]

@@ -1,0 +1,15 @@
+{
+  "extends": "@tsconfig/node14/tsconfig.json",
+  "compilerOptions": {
+    "sourceMap": true,
+    "moduleResolution": "node",
+    "outDir": "./handlers",
+    "rootDir": "./src",
+    "types": ["node","jest"],
+    "lib": [
+      "es2015",
+      "dom"
+    ]
+  },
+  "include": ["src/**/*.ts", "src/**/*.js"]
+}
