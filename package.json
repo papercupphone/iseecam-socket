@@ -1,5 +1,5 @@
 {
-  "name": "isee-am-socket",
+  "name": "iseecam-socket",
   "version": "1.0.0",
   "description": "Lambda functions for signal service",
   "dependencies": {
