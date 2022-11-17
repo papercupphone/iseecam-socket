@@ -7,11 +7,10 @@ export const handler = async (event: APIGatewayProxyEvent | string): Promise<API
     return event;
   }
   let postData = JSON.parse(event.body!);
-  return await leaveService.leave(
+  return await leaveService.publicLeave(
     {
       room: postData.room,
       username: postData.username,
-    },
-    postData.jwt,
+    }
   );
 };

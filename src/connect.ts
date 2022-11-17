@@ -7,14 +7,7 @@ export const handler = async (event: APIGatewayProxyEvent | string): Promise<API
     return event;
   }
 
-  if (event.queryStringParameters && event.queryStringParameters.jwt) {
-    const jwt = event.queryStringParameters.jwt;
-
-    return await connectService.connect(
-      {
-        connectionId: event.requestContext.connectionId as string,
-      },
-      jwt,
-    );
-  }
+  return await connectService.publicConnect({
+    connectionId: event.requestContext.connectionId as string,
+  });
 };

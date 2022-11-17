@@ -22,4 +22,23 @@ export class ConnectService {
       }
     }
   }
+
+  public async publicConnect(data: ConnectRequestModel): Promise<any> {
+    try {
+      const response = await axios.post<ConnectResponseModel>(`${process.env.MESSAGE_API_URL}/public/connect`, data, {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+      });
+
+      return { statusCode: 200, body: JSON.stringify(response.data) };
+    } catch (error: any) {
+      if (error && error.response && error.response.status) {
+        return { statusCode: error.response.status, body: JSON.stringify(error.response.data) };
+      } else {
+        return { statusCode: 500, body: "Something bad happened" };
+      }
+    }
+  }
 }

@@ -8,12 +8,11 @@ export const handler = async (event: APIGatewayProxyEvent | string): Promise<API
   }
 
   let postData = JSON.parse(event.body!);
-  return await joinService.join(
+  return await joinService.publicJoin(
     {
       connectionId: event.requestContext.connectionId as string,
       room: postData.room,
       username: postData.username,
-    },
-    postData.jwt,
+    }
   );
 };

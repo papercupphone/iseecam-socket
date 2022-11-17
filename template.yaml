@@ -6,7 +6,7 @@ Description: >
 Parameters:
   MessageApiUrl:
     Type: String
-    Default: https://ls66juopf1.execute-api.eu-west-1.amazonaws.com/prod
+    Default: https://hwnx16ul0a.execute-api.eu-west-1.amazonaws.com/prod
 Resources:
   ISeeCamSocket:
     Type: AWS::ApiGatewayV2::Api

@@ -8,12 +8,11 @@ export const handler = async (event: APIGatewayProxyEvent | string): Promise<API
   }
   let postData = JSON.parse(event.body!);
   console.log(postData.mesage.length);
-  return await messageService.send(
+  return await messageService.publicSend(
     {
       room: postData.room,
       sender: postData.sender,
       message: postData.message,
-    },
-    postData.jwt,
+    }
   );
 };
