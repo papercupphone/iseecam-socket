@@ -12,5 +12,12 @@ export const handler = async (event: APIGatewayProxyEvent | string): Promise<API
       connectionId: event.requestContext.connectionId as string,
       username: username as string,
     });
+  } else if (event.queryStringParameters && event.queryStringParameters.jwt) {
+    return await connectService.connect(
+      {
+        connectionId: event.requestContext.connectionId as string,
+      },
+      event.queryStringParameters.jwt,
+    );
   }
 };

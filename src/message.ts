@@ -1,4 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { MessageRequestModel } from './model/request/message.request.model';
 import { MessageService } from './service/message.service';
 
 const messageService: MessageService = new MessageService();
@@ -7,12 +8,16 @@ export const handler = async (event: APIGatewayProxyEvent | string): Promise<API
     return event;
   }
   let postData = JSON.parse(event.body!);
-  console.log(postData.mesage.length);
-  return await messageService.publicSend(
-    {
-      room: postData.room,
-      sender: postData.sender,
-      message: postData.message,
-    }
-  );
+
+  const data: MessageRequestModel = {
+    room: postData.room,
+    sender: postData.sender,
+    message: postData.message,
+  };
+
+  if (!postData.jwt) {
+    return await messageService.publicSend(data);
+  } else {
+    return await messageService.send(data, postData.jwt);
+  }
 };
