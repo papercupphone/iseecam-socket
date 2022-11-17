@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { ConnectRequestModel } from '../model/request/connect.request.model';
+import { PublicConnectRequestModel } from '../model/request/public.connect.request.model';
 import { ConnectResponseModel } from '../model/response/connect.response.model';
 
 export class ConnectService {
@@ -23,7 +24,7 @@ export class ConnectService {
     }
   }
 
-  public async publicConnect(data: ConnectRequestModel): Promise<any> {
+  public async publicConnect(data: PublicConnectRequestModel): Promise<any> {
     try {
       const response = await axios.post<ConnectResponseModel>(`${process.env.MESSAGE_API_URL}/public/connect`, data, {
         headers: {

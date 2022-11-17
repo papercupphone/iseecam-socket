@@ -6,8 +6,11 @@ export const handler = async (event: APIGatewayProxyEvent | string): Promise<API
   if (typeof event === 'string') {
     return event;
   }
-
-  return await connectService.publicConnect({
-    connectionId: event.requestContext.connectionId as string,
-  });
+  if (event.queryStringParameters && event.queryStringParameters.jwt) {
+    const username = event.queryStringParameters.username;
+    return await connectService.publicConnect({
+      connectionId: event.requestContext.connectionId as string,
+      username: username as string,
+    });
+  }
 };
